@@ -5,6 +5,8 @@ import { SettingsBar } from './SettingsBar'
 interface PreviewPanelProps {
   markdown: string
   settings: DocumentSettings
+  documentPath?: string
+  assetUrls: ReadonlyMap<string, string>
   previewStatus: PreviewStatus
   isFullscreen: boolean
   onSettingsChange: (settings: DocumentSettings) => void
@@ -15,6 +17,8 @@ interface PreviewPanelProps {
 export function PreviewPanel({
   markdown,
   settings,
+  documentPath,
+  assetUrls,
   previewStatus,
   isFullscreen,
   onSettingsChange,
@@ -39,7 +43,13 @@ export function PreviewPanel({
         onChange={onSettingsChange}
         onToggleFullscreen={onToggleFullscreen}
       />
-      <DocumentPreview markdown={markdown} settings={settings} onStatusChange={onStatusChange} />
+      <DocumentPreview
+        markdown={markdown}
+        settings={settings}
+        documentPath={documentPath}
+        assetUrls={assetUrls}
+        onStatusChange={onStatusChange}
+      />
     </section>
   )
 }

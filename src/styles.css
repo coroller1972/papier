@@ -13,7 +13,7 @@
 
 * { box-sizing: border-box; }
 
-html, body, #root { min-width: 320px; height: 100%; margin: 0; }
+html, body, #root { width: 100%; min-width: 320px; max-width: 100%; height: 100%; margin: 0; }
 
 body { overflow: hidden; }
 
@@ -59,7 +59,7 @@ textarea:focus-visible {
   border-bottom: 1px solid var(--border);
 }
 
-.brand-group { display: flex; align-items: baseline; gap: 16px; min-width: 0; }
+.brand-group { display: flex; align-items: center; gap: 12px; min-width: 0; }
 
 .wordmark {
   color: #121b29;
@@ -78,7 +78,49 @@ textarea:focus-visible {
   white-space: nowrap;
 }
 
-.header-actions { display: flex; gap: 10px; }
+.folder-name {
+  max-width: 110px;
+  overflow: hidden;
+  color: #98a0ac;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.folder-name::before { content: "Dossier : "; }
+
+.document-picker {
+  position: relative;
+  display: flex;
+  width: clamp(150px, 20vw, 290px);
+  min-width: 0;
+  align-items: center;
+}
+
+.document-picker select {
+  width: 100%;
+  height: 34px;
+  overflow: hidden;
+  padding: 0 32px 0 11px;
+  color: #334057;
+  border: 1px solid #dce1e7;
+  border-radius: 4px;
+  appearance: none;
+  background: #f8f9fb;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.document-picker svg {
+  position: absolute;
+  right: 9px;
+  width: 14px;
+  pointer-events: none;
+}
+
+.header-actions { display: flex; flex-shrink: 0; gap: 8px; }
 
 .button {
   display: inline-flex;
@@ -401,6 +443,18 @@ textarea:focus-visible {
 .document-page strong { font-weight: 650; }
 .document-page hr { margin: 2.2em 0; border: 0; border-top: 1px solid #d8dde5; }
 .document-page img { max-width: 100%; height: auto; break-inside: avoid; }
+.local-image-error {
+  display: block;
+  margin: 1.2em 0;
+  padding: 12px 14px;
+  color: #b42318;
+  border: 1px solid #f2b8b5;
+  border-radius: 4px;
+  background: #fff5f4;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 12px;
+  break-inside: avoid;
+}
 
 .document-page blockquote {
   margin: 1.5em 0;
@@ -473,6 +527,8 @@ textarea:focus-visible {
 .mobile-tabs { display: none; }
 
 @media (max-width: 1150px) {
+  .folder-name, .button-open-file span { display: none; }
+  .button-open-file { width: 42px; padding-inline: 10px; }
   .privacy-note { display: none; }
   .settings-bar { justify-content: flex-end; }
   .workspace { grid-template-columns: minmax(330px, 42%) minmax(520px, 58%); }
@@ -482,9 +538,10 @@ textarea:focus-visible {
 @media (max-width: 820px) {
   body { overflow: hidden; }
   .app-shell { grid-template-rows: 62px 44px minmax(0, 1fr); }
-  .app-header { padding: 0 13px 0 18px; }
+  .app-header { gap: 12px; padding: 0 13px 0 18px; }
   .wordmark { font-size: 27px; }
-  .current-file, .button-example, .button-quiet span { display: none; }
+  .current-file, .folder-name, .button-example, .button-open-file, .button-quiet span { display: none; }
+  .document-picker { width: min(42vw, 220px); }
   .button { min-width: 42px; min-height: 38px; padding: 0 11px; }
   .button-primary { min-width: 150px; }
   .button-primary span { display: inline; }

@@ -1,16 +1,21 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import { renderMarkdown, renderMermaidDiagrams } from '../lib/markdown'
+import { resolveLocalImages } from '../lib/localWorkspace'
 import type { DocumentSettings, PreviewStatus } from '../types'
 
 interface DocumentPreviewProps {
   markdown: string
   settings: DocumentSettings
+  documentPath?: string
+  assetUrls: ReadonlyMap<string, string>
   onStatusChange: (status: PreviewStatus) => void
 }
 
 export const DocumentPreview = memo(function DocumentPreview({
   markdown,
   settings,
+  documentPath,
+  assetUrls,
   onStatusChange,
 }: DocumentPreviewProps) {
   const articleRef = useRef<HTMLElement>(null)
@@ -42,7 +47,10 @@ export const DocumentPreview = memo(function DocumentPreview({
     article.innerHTML = html
     onStatusChange('rendering')
 
-    renderMermaidDiagrams(article, controller.signal)
+    Promise.all([
+      renderMermaidDiagrams(article, controller.signal),
+      resolveLocalImages(article, documentPath, assetUrls, controller.signal),
+    ])
       .then(() => {
         if (!controller.signal.aborted) onStatusChange('ready')
       })
@@ -51,7 +59,7 @@ export const DocumentPreview = memo(function DocumentPreview({
       })
 
     return () => controller.abort()
-  }, [html, onStatusChange])
+  }, [assetUrls, documentPath, html, onStatusChange])
 
   return (
     <div className="preview-scroller" ref={scrollerRef}>

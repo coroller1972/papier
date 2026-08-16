@@ -9,3 +9,9 @@ export interface DocumentSettings {
   theme: DocumentTheme
   zoom: number
 }
+
+export interface WorkspaceDocument {
+  path: string
+  name: string
+  content: string
+}
