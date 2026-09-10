@@ -33,11 +33,10 @@ export async function importLocalWorkspace(files: File[]): Promise<ImportedWorks
   }
 
   const documents = await Promise.all(
-    markdownEntries.map(async ({ file, path }) => ({
-      path,
-      name: path.split('/').at(-1) || path,
-      content: await file.text(),
-    })),
+    markdownEntries.map(async ({ file, path }) => {
+      const content = await file.text()
+      return { path, name: path.split('/').at(-1) || path, content, originalContent: content }
+    }),
   )
 
   const assets = new Map<string, File>()
@@ -52,7 +51,7 @@ export async function importLocalWorkspace(files: File[]): Promise<ImportedWorks
   }
 }
 
-function resolveRelativePath(documentPath: string, source: string): string | null {
+export function resolveRelativePath(documentPath: string, source: string): string | null {
   if (!source || source.startsWith('#') || source.startsWith('//')) return null
   if (/^[a-z][a-z0-9+.-]*:/i.test(source)) return null
 
@@ -82,19 +81,21 @@ function resolveRelativePath(documentPath: string, source: string): string | nul
 }
 
 function waitForImage(image: HTMLImageElement, signal: AbortSignal): Promise<void> {
-  if (image.complete) return Promise.resolve()
-
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const finish = () => {
+      clearTimeout(timer)
       image.removeEventListener('load', finish)
       image.removeEventListener('error', finish)
       signal.removeEventListener('abort', finish)
-      resolve()
+      if (signal.aborted) resolve()
+      else if (image.complete && image.naturalWidth > 0) resolve()
+      else reject(new Error(`Image illisible : ${image.getAttribute('src')}`))
     }
-
+    const timer = setTimeout(finish, 15000)
     image.addEventListener('load', finish, { once: true })
     image.addEventListener('error', finish, { once: true })
     signal.addEventListener('abort', finish, { once: true })
+    if (image.complete || signal.aborted) finish()
   })
 }
 
@@ -104,7 +105,6 @@ export async function resolveLocalImages(
   assetUrls: ReadonlyMap<string, string>,
   signal: AbortSignal,
 ): Promise<void> {
-  if (!documentPath) return
 
   const caseInsensitiveUrls = new Map(
     Array.from(assetUrls, ([path, url]) => [path.toLocaleLowerCase(), url]),
@@ -114,8 +114,11 @@ export async function resolveLocalImages(
 
   for (const image of container.querySelectorAll<HTMLImageElement>('img[src]')) {
     const source = image.getAttribute('src') || ''
-    const resolvedPath = resolveRelativePath(documentPath, source)
-    if (!resolvedPath) continue
+    const resolvedPath = resolveRelativePath(documentPath || 'document.md', source)
+    if (!resolvedPath) {
+      pendingImages.push(waitForImage(image, signal))
+      continue
+    }
 
     const assetUrl = assetUrls.get(resolvedPath)
       ?? caseInsensitiveUrls.get(resolvedPath.toLocaleLowerCase())
@@ -135,6 +138,7 @@ export async function resolveLocalImages(
     pendingImages.push(waitForImage(image, signal))
   }
 
-  await Promise.all(pendingImages)
+  const results = await Promise.allSettled(pendingImages)
+  if (results.some((result) => result.status === 'rejected')) throw new Error('Au moins une image ne peut pas être chargée.')
   if (hasMissingImage) throw new Error('Au moins une image locale est introuvable.')
 }

@@ -1,10 +1,12 @@
-import { useCallback, useDeferredValue, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { InputHTMLAttributes } from 'react'
 import { AppHeader } from './components/AppHeader'
 import { EditorPanel } from './components/EditorPanel'
 import { PreviewPanel } from './components/PreviewPanel'
+import { defaultTypography, restoreSettings } from './lib/typography'
 import { SAMPLE_MARKDOWN } from './data/sample'
-import { importLocalWorkspace } from './lib/localWorkspace'
+import { loadSession, saveSession } from './lib/session'
+import { importLocalWorkspace, resolveRelativePath } from './lib/localWorkspace'
 import type { DocumentSettings, PreviewStatus, WorkspaceDocument } from './types'
 
 const STORAGE_KEY = 'papier-document-v1'
@@ -14,6 +16,7 @@ const DIRECTORY_INPUT_PROPS = { webkitdirectory: '' } as InputHTMLAttributes<HTM
 }
 
 const DEFAULT_SETTINGS: DocumentSettings = {
+  typography: defaultTypography,
   format: 'A4',
   margins: 'normal',
   theme: 'editorial',
@@ -21,13 +24,13 @@ const DEFAULT_SETTINGS: DocumentSettings = {
 }
 
 function loadStoredDocument() {
-  return window.localStorage.getItem(STORAGE_KEY) ?? SAMPLE_MARKDOWN
+  try { return window.localStorage.getItem(STORAGE_KEY) ?? SAMPLE_MARKDOWN } catch { return SAMPLE_MARKDOWN }
 }
 
 function loadStoredSettings(): DocumentSettings {
   try {
     const stored = window.localStorage.getItem(SETTINGS_KEY)
-    return stored ? { ...DEFAULT_SETTINGS, ...JSON.parse(stored) } : DEFAULT_SETTINGS
+    return stored ? restoreSettings({ ...DEFAULT_SETTINGS, ...JSON.parse(stored) }) : DEFAULT_SETTINGS
   } catch {
     return DEFAULT_SETTINGS
   }
@@ -35,7 +38,15 @@ function loadStoredSettings(): DocumentSettings {
 
 export default function App() {
   const [markdown, setMarkdown] = useState(loadStoredDocument)
-  const deferredMarkdown = useDeferredValue(markdown)
+  const [restored, setRestored] = useState(false)
+  const [storageAvailable, setStorageAvailable] = useState(true)
+  const [saveStatus, setSaveStatus] = useState('Chargement…')
+  const [assets, setAssets] = useState<ReadonlyMap<string, File>>(new Map())
+  const [exportRequest, setExportRequest] = useState(0)
+  const [renderedRequest, setRenderedRequest] = useState(-1)
+  const [anchor, setAnchor] = useState<{ hash: string; sequence: number }>()
+  const [navigationError, setNavigationError] = useState('')
+  const [exportError, setExportError] = useState('')
   const [fileName, setFileName] = useState('processus-publication.md')
   const [folderName, setFolderName] = useState<string>()
   const [documents, setDocuments] = useState<WorkspaceDocument[]>([])
@@ -57,52 +68,92 @@ export default function App() {
     for (const [path, file] of assets) nextUrls.set(path, URL.createObjectURL(file))
     assetUrlsRef.current = nextUrls
     setAssetUrls(nextUrls)
+    setAssets(assets)
   }
 
   const clearWorkspace = () => {
     replaceAssetUrls(new Map())
     setDocuments([])
+    setAnchor(undefined)
+    setNavigationError('')
     setActiveDocumentPath(undefined)
     setFolderName(undefined)
   }
 
   useEffect(() => {
-    window.localStorage.setItem(STORAGE_KEY, markdown)
-  }, [markdown])
+    let cancelled = false
+    loadSession().then((session) => {
+      if (cancelled) return
+      if (session) {
+        setMarkdown(session.markdown)
+        setFileName(session.fileName)
+        setFolderName(session.folderName)
+        setDocuments(session.documents.map(document => document.originalContent === undefined ? { ...document, originalContent: document.content } : document))
+        setActiveDocumentPath(session.activeDocumentPath)
+        setSettings(restoreSettings(session.settings))
+        replaceAssetUrls(session.assets)
+      }
+      setRestored(true)
+    }).catch(() => {
+      if (cancelled) return
+      setStorageAvailable(false)
+      setSaveStatus('Sauvegarde indisponible — téléchargez votre Markdown')
+      setRestored(true)
+    })
+    return () => { cancelled = true }
+  }, [])
 
   useEffect(() => {
-    window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings))
-  }, [settings])
+    if (!restored || !storageAvailable) return
+    let cancelled = false
+    setSaveStatus('Enregistrement…')
+    saveSession({ markdown, fileName, folderName, documents, activeDocumentPath,
+      assets, settings }).then(() => {
+      if (!cancelled) setSaveStatus('Enregistré dans ce navigateur')
+    }).catch(() => {
+      if (!cancelled) setSaveStatus('Échec de sauvegarde — téléchargez votre Markdown')
+    })
+    return () => { cancelled = true }
+  }, [restored, storageAvailable, markdown, fileName, folderName, documents, activeDocumentPath, assets, settings])
 
   useEffect(() => () => {
     for (const url of assetUrlsRef.current.values()) URL.revokeObjectURL(url)
   }, [])
 
   useEffect(() => {
-    if (!exportPending || previewStatus === 'rendering') return
+    if (!exportPending || renderedRequest !== exportRequest || previewStatus === 'rendering') return
+    if (previewStatus === 'error') {
+      setExportError('Export interrompu : corrigez les erreurs signalées dans l’aperçu, puis réessayez.')
+      setExportPending(false)
+      return
+    }
 
     const frame = window.requestAnimationFrame(() => {
-      window.print()
-      setExportPending(false)
+      const title = document.title
+      document.title = fileName.split('/').at(-1)?.replace(/\.(md|markdown)$/i, '') || 'Papier'
+      try { window.print() } finally { document.title = title; setExportPending(false) }
     })
     return () => window.cancelAnimationFrame(frame)
-  }, [exportPending, previewStatus])
+  }, [exportPending, previewStatus, renderedRequest, exportRequest, fileName])
 
-  const handleStatusChange = useCallback((status: PreviewStatus) => {
+  const handleStatusChange = useCallback((status: PreviewStatus, request: number) => {
+    setRenderedRequest(request)
     setPreviewStatus(status)
   }, [])
 
   const handleFile = async (file: File) => {
-    if (!file.name.toLowerCase().endsWith('.md') && file.type !== 'text/markdown') {
+    if (!/\.(md|markdown)$/i.test(file.name) && file.type !== 'text/markdown') {
       window.alert('Veuillez sélectionner un fichier Markdown (.md).')
       return
     }
 
-    const content = await file.text()
-    clearWorkspace()
-    setMarkdown(content)
-    setFileName(file.name)
-    setMobilePanel('editor')
+    try {
+      const content = await file.text()
+      clearWorkspace()
+      setMarkdown(content)
+      setFileName(file.name)
+      setMobilePanel('editor')
+    } catch { window.alert('Impossible de lire ce fichier.') }
   }
 
   const handleFolder = async (files: File[]) => {
@@ -127,12 +178,37 @@ export default function App() {
     const document = documents.find((candidate) => candidate.path === path)
     if (!document) return
 
+    setAnchor(undefined)
+    setNavigationError('')
     setActiveDocumentPath(document.path)
     setMarkdown(document.content)
     setFileName(document.path)
   }
 
+  const handleNavigateLink = (href: string): boolean => {
+    if (href.startsWith('#')) {
+      setAnchor(current => ({ hash: href, sequence: (current?.sequence || 0) + 1 }))
+      return true
+    }
+    if (/^(?:[a-z][a-z0-9+.-]*:|\/\/)/i.test(href)) return false
+    const path = resolveRelativePath(activeDocumentPath || fileName, href)
+    let linkPath = href.split(/[?#]/, 1)[0]
+    try { linkPath = decodeURIComponent(linkPath) } catch { /* Keep malformed paths literal. */ }
+    if (!/\.(md|markdown)$/i.test(path || linkPath)) return false
+    const exact = documents.find(document => document.path === path)
+    const matches = documents.filter(document => document.path.toLowerCase() === path?.toLowerCase())
+    const target = exact || (matches.length === 1 ? matches[0] : undefined)
+    if (!target) {
+      setNavigationError(`Document introuvable dans le dossier : ${path || href}`)
+      return true
+    }
+    handleDocumentSelect(target.path)
+    setAnchor(current => ({ hash: href.includes('#') ? href.slice(href.indexOf('#')) : '', sequence: (current?.sequence || 0) + 1 }))
+    return true
+  }
+
   const handleMarkdownChange = (content: string) => {
+    setExportError('')
     setMarkdown(content)
     if (!activeDocumentPath) return
 
@@ -140,6 +216,8 @@ export default function App() {
       document.path === activeDocumentPath ? { ...document, content } : document
     )))
   }
+
+  if (!restored) return <p role="status">Restauration de votre espace de travail…</p>
 
   return (
     <div
@@ -165,7 +243,17 @@ export default function App() {
           setMarkdown(SAMPLE_MARKDOWN)
           setFileName('processus-publication.md')
         }}
+        onDownload={() => {
+          const url = URL.createObjectURL(new Blob([markdown], { type: 'text/markdown;charset=utf-8' }))
+          const link = document.createElement('a')
+          link.href = url
+          link.download = fileName.split('/').at(-1) || 'document.md'
+          link.click()
+          window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+        }}
         onExport={() => {
+          setExportError('')
+          setExportRequest((request) => request + 1)
           setMobilePanel('preview')
           setExportPending(true)
         }}
@@ -175,7 +263,7 @@ export default function App() {
         ref={fileInputRef}
         className="visually-hidden"
         type="file"
-        accept=".md,text/markdown,text/plain"
+        accept=".md,.markdown,text/markdown,text/plain"
         onChange={(event) => {
           const file = event.target.files?.[0]
           if (file) void handleFile(file)
@@ -197,15 +285,21 @@ export default function App() {
         }}
       />
 
+      {navigationError && <div className="navigation-error" role="alert">{navigationError}<button type="button" onClick={() => setNavigationError('')}>Fermer</button></div>}
+      {exportError && <div className="export-error" role="alert">{exportError}</div>}
       <nav className="mobile-tabs" aria-label="Choix du panneau">
         <button type="button" className={mobilePanel === 'editor' ? 'active' : ''} onClick={() => setMobilePanel('editor')}>Markdown</button>
         <button type="button" className={mobilePanel === 'preview' ? 'active' : ''} onClick={() => setMobilePanel('preview')}>Aperçu</button>
       </nav>
 
       <main className={`workspace mobile-${mobilePanel}`}>
-        <EditorPanel markdown={markdown} onChange={handleMarkdownChange} />
+        <EditorPanel documentKey={activeDocumentPath ?? fileName} saveStatus={saveStatus} markdown={markdown} onChange={handleMarkdownChange} />
         <PreviewPanel
-          markdown={deferredMarkdown}
+          documentKey={activeDocumentPath ?? fileName}
+          anchor={anchor}
+          onNavigateLink={handleNavigateLink}
+          markdown={markdown}
+          exportRequest={exportRequest}
           settings={settings}
           documentPath={activeDocumentPath}
           assetUrls={assetUrls}

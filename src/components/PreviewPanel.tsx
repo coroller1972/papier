@@ -1,8 +1,13 @@
 import type { DocumentSettings, PreviewStatus } from '../types'
 import { DocumentPreview } from './DocumentPreview'
+import { TypographyPanel } from './TypographyPanel'
 import { SettingsBar } from './SettingsBar'
 
 interface PreviewPanelProps {
+  documentKey: string
+  anchor?: { hash: string; sequence: number }
+  onNavigateLink: (href: string) => boolean
+  exportRequest: number
   markdown: string
   settings: DocumentSettings
   documentPath?: string
@@ -10,11 +15,13 @@ interface PreviewPanelProps {
   previewStatus: PreviewStatus
   isFullscreen: boolean
   onSettingsChange: (settings: DocumentSettings) => void
-  onStatusChange: (status: PreviewStatus) => void
+  onStatusChange: (status: PreviewStatus, request: number) => void
   onToggleFullscreen: () => void
 }
 
 export function PreviewPanel({
+  documentKey, anchor, onNavigateLink,
+  exportRequest,
   markdown,
   settings,
   documentPath,
@@ -26,7 +33,7 @@ export function PreviewPanel({
   onToggleFullscreen,
 }: PreviewPanelProps) {
   const statusLabel = previewStatus === 'rendering'
-    ? 'Rendu des diagrammes…'
+    ? 'Mise en page…'
     : previewStatus === 'error'
       ? 'Erreur de rendu'
       : 'Aperçu à jour'
@@ -43,7 +50,12 @@ export function PreviewPanel({
         onChange={onSettingsChange}
         onToggleFullscreen={onToggleFullscreen}
       />
+      <TypographyPanel value={settings.typography} onChange={typography => onSettingsChange({ ...settings, typography })} />
       <DocumentPreview
+        documentKey={documentKey}
+        anchor={anchor}
+        onNavigateLink={onNavigateLink}
+        exportRequest={exportRequest}
         markdown={markdown}
         settings={settings}
         documentPath={documentPath}
