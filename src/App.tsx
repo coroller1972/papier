@@ -4,6 +4,7 @@ import { AppHeader } from './components/AppHeader'
 import { EditorPanel } from './components/EditorPanel'
 import { PreviewPanel } from './components/PreviewPanel'
 import { defaultTypography, restoreSettings } from './lib/typography'
+import { loadAppearance, saveAppearance } from './lib/appearance'
 import { SAMPLE_MARKDOWN } from './data/sample'
 import { loadSession, saveSession } from './lib/session'
 import { importLocalWorkspace, resolveRelativePath } from './lib/localWorkspace'
@@ -37,6 +38,13 @@ function loadStoredSettings(): DocumentSettings {
 }
 
 export default function App() {
+  const [appearance, setAppearance] = useState(loadAppearance)
+  const toggleAppearance = () => {
+    const next = appearance === 'dark' ? 'light' : 'dark'
+    document.documentElement.dataset.appearance = next
+    saveAppearance(next)
+    setAppearance(next)
+  }
   const [markdown, setMarkdown] = useState(loadStoredDocument)
   const [restored, setRestored] = useState(false)
   const [storageAvailable, setStorageAvailable] = useState(true)
@@ -230,6 +238,8 @@ export default function App() {
       }}
     >
       <AppHeader
+        appearance={appearance}
+        onToggleAppearance={toggleAppearance}
         fileName={fileName}
         exportPending={exportPending}
         folderName={folderName}

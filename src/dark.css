@@ -1,0 +1,49 @@
+.appearance-toggle { width: 42px; padding-inline: 10px; flex-shrink: 0; }
+@media (max-width: 480px) {
+  .brand-group:has(.browser-toggle) .document-picker { width: min(30vw, 140px); }
+  .header-actions { gap: 5px; }
+}
+
+/* Interface only: document measurement, preview pages and printing stay light. */
+@media screen {
+  :root[data-appearance="dark"] {
+    color-scheme: dark;
+    color: #e3e9f2;
+    background: #10151e;
+    --ink: #e3e9f2;
+    --muted: #abb8cb;
+    --accent: #8ab4ff;
+    --border: #344052;
+    --workspace: #10151e;
+    --editor-heading: #9fc5ff;
+    --editor-link: #8ecbff;
+    --editor-code: #a9d9b1;
+    --editor-meta: #b7a3d9;
+  }
+  [data-appearance="dark"] :is(.app-header, .editor-panel, .preview-heading, .settings-bar, .editor-footer, .editor-toolbar, .page-navigation, .typography-panel, .browser-popover, .mobile-tabs, .mobile-tabs button) { background: #19212e; border-color: var(--border); }
+  [data-appearance="dark"] :is(.wordmark, .typography-panel summary, .zoom-control output, .select-wrap select) { color: var(--ink); }
+  [data-appearance="dark"] :is(.current-file, .folder-name, .render-status, .editor-footer, .editor-help, .select-control > span:first-child, .zoom-control > span:first-child, .page-navigation [role="status"], .typography-panel summary span, .typography-fields label, .typography-content p, .document-count, .document-browser small) { color: var(--muted); }
+  [data-appearance="dark"] :is(.button, .browser-toggle, .document-picker select, .editor-toolbar button, .page-break-button, .page-navigation button, .page-navigation select, .typography-presets button, .typography-fields select, .document-browser > input, .fullscreen-button, .cm-button, .cm-textfield) { background: #222d3d; color: var(--ink); border-color: #43516a; }
+  [data-appearance="dark"] :is(.button:hover, .editor-toolbar button:hover, .zoom-control button:hover, .icon-button:hover, .document-entry:hover, .document-entry[aria-current="page"], .typography-presets button[aria-pressed="true"], .browser-toggle[aria-expanded="true"], .fullscreen-button[aria-pressed="true"]) { color: #bad4ff; background: #2b4161; border-color: #7199d4; }
+  [data-appearance="dark"] .button-primary { background: #a7c7ff; color: #101b2e; border-color: #a7c7ff; }
+  [data-appearance="dark"] .button-primary:hover { background: #c3d9ff; }
+  [data-appearance="dark"] .privacy-note { color: #82d8ab; }
+  [data-appearance="dark"] :is(.select-control, .zoom-control, .document-tree ul ul) { border-color: var(--border); }
+  [data-appearance="dark"] .preview-scroller { background: #10151e; }
+  [data-appearance="dark"] .code-editor .cm-editor { background: #141c28; color: #e3e9f2; }
+  [data-appearance="dark"] .code-editor .cm-gutters { background: #192332; color: #a2b1c6; border-color: #344052; }
+  [data-appearance="dark"] .code-editor :is(.cm-activeLine, .cm-activeLineGutter) { background: #223248; }
+  [data-appearance="dark"] .code-editor .cm-panels { background: #222d3d; color: #e3e9f2; border-color: #43516a; }
+  [data-appearance="dark"] .code-editor .cm-cursor { border-left-color: #e3e9f2; }
+  [data-appearance="dark"] .code-editor .cm-content { caret-color: #e3e9f2; }
+  [data-appearance="dark"] .code-editor .cm-selectionBackground { background: #3c5579 !important; }
+  [data-appearance="dark"] .code-editor .cm-searchMatch { background: #625220; outline: 1px solid #b79c51; }
+  [data-appearance="dark"] .code-editor .cm-searchMatch-selected { background: #806825; }
+  [data-appearance="dark"] .code-editor .cm-tooltip { background: #222d3d; color: #e3e9f2; border-color: #43516a; }
+  [data-appearance="dark"] .modified-badge { background: #58431d; color: #ffdc91; }
+  [data-appearance="dark"] :is(.export-error, .pagination-error) { background: #442529; color: #ffc3bd; border-color: #98585c; }
+  [data-appearance="dark"] .status-error { color: #ffc3bd; }
+  [data-appearance="dark"] .navigation-error { background: #44371e; color: #ffdf9e; }
+  [data-appearance="dark"] .paginated-pages { color-scheme: light; color: #20242c; }
+}
+@media print { :root { color-scheme: light; } }

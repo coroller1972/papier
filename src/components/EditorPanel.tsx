@@ -1,4 +1,6 @@
 import { useEffect, useRef } from 'react'
+import { HighlightStyle, syntaxHighlighting } from '@codemirror/language'
+import { tags } from '@lezer/highlight'
 import { basicSetup } from 'codemirror'
 import type { Extension } from '@codemirror/state'
 import { Annotation, EditorSelection, EditorState, Prec } from '@codemirror/state'
@@ -13,6 +15,17 @@ interface EditorPanelProps {
   documentKey: string
   onChange: (value: string) => void
 }
+
+const editorHighlighting = syntaxHighlighting(HighlightStyle.define([
+  { tag: tags.heading, color: 'var(--editor-heading, #182234)', fontWeight: 'bold' },
+  { tag: tags.link, color: 'var(--editor-link, #155bd7)', textDecoration: 'underline' },
+  { tag: tags.url, color: 'var(--editor-link, #155bd7)' },
+  { tag: tags.monospace, color: 'var(--editor-code, #24633b)' },
+  { tag: [tags.meta, tags.processingInstruction], color: 'var(--editor-meta, #725293)' },
+  { tag: tags.emphasis, fontStyle: 'italic' },
+  { tag: tags.strong, fontWeight: 'bold' },
+  { tag: tags.strikethrough, textDecoration: 'line-through' },
+]))
 
 const externalChange = Annotation.define<boolean>()
 
@@ -82,7 +95,7 @@ export function EditorPanel({ markdown, onChange, saveStatus, documentKey }: Edi
     const host = hostRef.current
     if (!host) return
     extensionsRef.current = [
-      basicSetup, markdownLanguage(), search({ top: true }), EditorState.phrases.of(phrases),
+      basicSetup, editorHighlighting, markdownLanguage(), search({ top: true }), EditorState.phrases.of(phrases),
       EditorView.contentAttributes.of({ 'aria-label': 'Contenu Markdown', spellcheck: 'false' }),
       EditorView.lineWrapping,
       Prec.highest(keymap.of([

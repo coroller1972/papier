@@ -132,3 +132,11 @@ Fontsource (Latin et Latin étendu). Aucun service de polices externe n’est co
 `public/licenses/fonts/`. Les caractères hors des alphabets inclus utilisent les
 polices de secours du navigateur. La pagination et l’export attendent le chargement
 des polices sélectionnées ; un échec de chargement bloque l’export.
+
+### Thème sombre de l’interface
+
+Le bouton lune/soleil dans l’en-tête bascule entre les interfaces claire et sombre.
+Au premier lancement, Papier reprend la préférence du système ; un choix explicite
+est ensuite conservé dans ce navigateur. L’éditeur, la recherche, les dossiers et
+les réglages suivent ce choix. Les pages de l’aperçu et le PDF gardent les couleurs
+du document.
