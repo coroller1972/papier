@@ -14,6 +14,31 @@ export function pageMetrics(settings: DocumentSettings) {
   return { width, height, vertical, horizontal }
 }
 
+function stabilizeTableColumns(source: HTMLElement) {
+  for (const table of source.querySelectorAll('table')) {
+    const header = table.tHead?.rows[0]
+    if (!header) continue
+    // Measure the complete table once. If each page recalculates its own widths
+    // after rows are removed, text can reflow and push the last row off-page.
+    const cells = Array.from(header.cells)
+    const wrapping = cells.map(cell => cell.style.overflowWrap)
+    // Keep short headings readable when their natural minimum widths fit.
+    cells.forEach(cell => { cell.style.overflowWrap = 'normal' })
+    let widths = cells.map(cell => cell.getBoundingClientRect().width)
+    const fits = table.getBoundingClientRect().width <= source.getBoundingClientRect().width + 1
+    cells.forEach((cell, index) => { cell.style.overflowWrap = wrapping[index] })
+    if (!fits) widths = cells.map(cell => cell.getBoundingClientRect().width)
+    const total = widths.reduce((sum, width) => sum + width, 0)
+    if (!total) continue
+    cells.forEach((cell, index) => {
+      cell.style.width = `${widths[index] / total * 100}%`
+      cell.style.display = 'table-cell'
+    })
+    table.style.tableLayout = 'fixed'
+    table.style.display = 'table'
+  }
+}
+
 // Paged.js inserts shared styles. Serialize renders and discard obsolete work
 // before allowing a newer render to replace those styles and the visible pages.
 export function paginate(source: HTMLElement, target: HTMLElement, settings: DocumentSettings, signal: AbortSignal, beforeCommit?: () => (() => void)): Promise<number> {
@@ -22,6 +47,7 @@ export function paginate(source: HTMLElement, target: HTMLElement, settings: Doc
     const { Previewer } = await import('pagedjs')
     if (signal.aborted) return 0
     paginationStats.started++
+    stabilizeTableColumns(source)
     const engine = new Previewer()
     // Throw at a page boundary: stop() alone restarts automatically in Paged.js.
     engine.chunker.hooks.beforePageLayout.register(() => signal.throwIfAborted())

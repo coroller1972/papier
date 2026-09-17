@@ -94,7 +94,14 @@
   font-size: .92em;
 }
 
-.paper-content th, .paper-content td { padding: 8px 10px; border: 1px solid #d7dde5; text-align: left; }
+.paper-content th, .paper-content td {
+  padding: 8px 10px;
+  border: 1px solid #d7dde5;
+  text-align: left;
+  /* Include wrapping of long URLs, identifiers and inline code in the table's
+     intrinsic column widths. break-word alone lets those columns exceed a page. */
+  overflow-wrap: anywhere;
+}
 .paper-content th { background: #f1f4f7; font-weight: 650; }
 
 .mermaid-diagram {

@@ -632,11 +632,14 @@ textarea:focus-visible {
 .page-navigation [role=status] { color: #697386; font-size: 11px; }
 .page-break-button { font-size: 11px; }
 .pagination-error { margin: 0; padding: 10px 16px; background: #fff5f4; color: #b42318; font-size: 12px; }
-.paginated-pages { width: fit-content; margin: 0 auto; }
+.paginated-scale { margin: 0 auto; overflow: clip; overflow-clip-margin: 24px; }
+.paginated-pages { width: fit-content; transform-origin: top left; }
 .paginated-pages .pagedjs_pages { display: flex; flex-direction: column; gap: 24px; }
 .paginated-pages .pagedjs_page { flex-shrink: 0; background: white; box-shadow: 0 4px 20px rgb(37 45 55 / 17%); }
 @media print {
   .page-navigation, .pagination-error, .pagination-staging { display: none !important; }
+  .paginated-scale { width: auto !important; height: auto !important; overflow: visible; }
+  .paginated-pages { transform: none !important; }
   .paginated-preview, .paginated-pages, .paginated-pages .pagedjs_pages { display: block; margin: 0; padding: 0; zoom: 1 !important; }
   .paginated-pages .pagedjs_page { margin: 0; box-shadow: none; break-after: page; }
   .paginated-pages .pagedjs_page:last-child { break-after: auto; }

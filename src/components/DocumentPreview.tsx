@@ -22,17 +22,19 @@ export const DocumentPreview = memo(function DocumentPreview({
   documentKey, anchor, onNavigateLink, exportRequest, markdown, settings, documentPath, assetUrls, onStatusChange,
 }: DocumentPreviewProps) {
   const pagesRef = useRef<HTMLDivElement>(null)
+  const scaleRef = useRef<HTMLDivElement>(null)
   const scrollerRef = useRef<HTMLDivElement>(null)
   const handledAnchor = useRef<typeof anchor>(undefined)
   const committedDocument = useRef<string | undefined>(undefined)
   const [availableWidth, setAvailableWidth] = useState(0)
+  const [pagesSize, setPagesSize] = useState({ width: 0, height: 0 })
   const [pageCount, setPageCount] = useState(0)
   const [currentPage, setCurrentPage] = useState(1)
   const [busy, setBusy] = useState(true)
   const [error, setError] = useState('')
   const html = useMemo(() => renderMarkdown(markdown), [markdown])
   const { format, margins, theme, typography } = settings
-  const pageWidth = pageMetrics(settings).width * 96 / 25.4
+  const pageWidth = pagesSize.width || pageMetrics(settings).width * 96 / 25.4
   const scale = Math.min(settings.zoom / 100, availableWidth > 0 ? availableWidth / pageWidth : 1)
 
   useEffect(() => {
@@ -44,12 +46,18 @@ export const DocumentPreview = memo(function DocumentPreview({
       }
     })
     observer.observe(scroller)
+    const pagesObserver = new ResizeObserver(([entry]) => {
+      if (!window.matchMedia('print').matches) {
+        setPagesSize({ width: entry.contentRect.width, height: entry.contentRect.height })
+      }
+    })
+    if (pagesRef.current) pagesObserver.observe(pagesRef.current)
     let printPosition = 0
     const beforePrint = () => { printPosition = scroller.scrollTop; scroller.scrollTo({ top: 0, left: 0 }) }
     const afterPrint = () => scroller.scrollTo({ top: printPosition })
     window.addEventListener('beforeprint', beforePrint)
     window.addEventListener('afterprint', afterPrint)
-    return () => { observer.disconnect(); window.removeEventListener('beforeprint', beforePrint); window.removeEventListener('afterprint', afterPrint) }
+    return () => { observer.disconnect(); pagesObserver.disconnect(); window.removeEventListener('beforeprint', beforePrint); window.removeEventListener('afterprint', afterPrint) }
   }, [])
 
   useEffect(() => {
@@ -104,6 +112,12 @@ export const DocumentPreview = memo(function DocumentPreview({
           const offset = committedDocument.current === documentKey && rectangle
             ? (top - rectangle.top) / rectangle.height : 0
           return () => {
+            // Update the scroll extent before restoring the position. The visual
+            // transform must never change the layout already measured by Paged.js.
+            if (scaleRef.current) {
+              const visualScale = target.offsetWidth ? target.getBoundingClientRect().width / target.offsetWidth : 1
+              scaleRef.current.style.height = `${target.offsetHeight * visualScale}px`
+            }
             const pages = target.querySelectorAll<HTMLElement>('.pagedjs_page')
             const nextIndex = Math.min(index, Math.max(0, pages.length - 1))
             const page = pages[nextIndex]
@@ -174,10 +188,12 @@ export const DocumentPreview = memo(function DocumentPreview({
         const index = pages.findIndex(page => page.getBoundingClientRect().bottom > top + 40)
         if (index >= 0) setCurrentPage(index + 1)
       }}>
-        <div ref={pagesRef} id="print-document" className="paginated-pages" onClick={event => {
-          const link = (event.target as Element).closest('a[href]')
-          if (link && onNavigateLink(link.getAttribute('href') || '')) event.preventDefault()
-        }} aria-busy={busy} style={{ zoom: scale }} />
+        <div ref={scaleRef} className="paginated-scale" style={{ width: pageWidth * scale, height: pagesSize.height * scale }}>
+          <div ref={pagesRef} id="print-document" className="paginated-pages" onClick={event => {
+            const link = (event.target as Element).closest('a[href]')
+            if (link && onNavigateLink(link.getAttribute('href') || '')) event.preventDefault()
+          }} aria-busy={busy} style={{ transform: `scale(${scale})` }} />
+        </div>
       </div>
     </div>
   )
