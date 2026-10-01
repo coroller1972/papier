@@ -94,7 +94,13 @@ export const DocumentPreview = memo(function DocumentPreview({
           resolveLocalImages(source, documentPath, assetUrls, controller.signal),
         ])
         if (controller.signal.aborted) return
-        const hasError = results.some((result) => result.status === 'rejected')
+        const problems = ['Polices', 'Diagrammes Mermaid', 'Images'].flatMap((label, index) => {
+          const result = results[index]
+          if (result.status !== 'rejected') return []
+          const reason = result.reason instanceof Error ? result.reason.message : ''
+          return [reason ? `${label} : ${reason}` : label]
+        })
+        const hasError = problems.length > 0
         const maxHeight = (metrics.height - 2 * metrics.vertical) * 96 / 25.4 - 2
         for (const media of source.querySelectorAll<HTMLElement>('img, svg')) {
           media.style.maxHeight = `${maxHeight}px`
@@ -131,7 +137,7 @@ export const DocumentPreview = memo(function DocumentPreview({
         })
         if (controller.signal.aborted) return
         setPageCount(count)
-        if (hasError) setError('Une police, une image ou un diagramme ne peut pas être rendu. Corrigez le document avant l’export.')
+        if (hasError) setError(`${problems.join(' — ')}. Corrigez le document avant l’export.`)
         setBusy(false)
         onStatusChange(hasError ? 'error' : 'ready', exportRequest)
       } catch {

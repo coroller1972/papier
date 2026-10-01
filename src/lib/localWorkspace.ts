@@ -110,7 +110,7 @@ export async function resolveLocalImages(
     Array.from(assetUrls, ([path, url]) => [path.toLocaleLowerCase(), url]),
   )
   const pendingImages: Promise<void>[] = []
-  let hasMissingImage = false
+  const missingImages: string[] = []
 
   for (const image of container.querySelectorAll<HTMLImageElement>('img[src]')) {
     const source = image.getAttribute('src') || ''
@@ -124,7 +124,7 @@ export async function resolveLocalImages(
       ?? caseInsensitiveUrls.get(resolvedPath.toLocaleLowerCase())
 
     if (!assetUrl) {
-      hasMissingImage = true
+      missingImages.push(source)
       const error = document.createElement('span')
       error.className = 'local-image-error'
       error.setAttribute('role', 'img')
@@ -140,5 +140,5 @@ export async function resolveLocalImages(
 
   const results = await Promise.allSettled(pendingImages)
   if (results.some((result) => result.status === 'rejected')) throw new Error('Au moins une image ne peut pas être chargée.')
-  if (hasMissingImage) throw new Error('Au moins une image locale est introuvable.')
+  if (missingImages.length) throw new Error(`Image locale introuvable : ${missingImages.join(', ')}`)
 }

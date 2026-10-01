@@ -144,6 +144,25 @@ export default function App() {
     return () => window.cancelAnimationFrame(frame)
   }, [exportPending, previewStatus, renderedRequest, exportRequest, fileName])
 
+  const startExport = useCallback(() => {
+    setExportError('')
+    setExportRequest((request) => request + 1)
+    setMobilePanel('preview')
+    setExportPending(true)
+  }, [])
+
+  // Ctrl/Cmd+P must go through the same readiness checks as the export button.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && !event.shiftKey && !event.altKey && event.key.toLowerCase() === 'p') {
+        event.preventDefault()
+        if (!exportPending) startExport()
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [exportPending, startExport])
+
   const handleStatusChange = useCallback((status: PreviewStatus, request: number) => {
     setRenderedRequest(request)
     setPreviewStatus(status)
@@ -261,12 +280,7 @@ export default function App() {
           link.click()
           window.setTimeout(() => URL.revokeObjectURL(url), 1000)
         }}
-        onExport={() => {
-          setExportError('')
-          setExportRequest((request) => request + 1)
-          setMobilePanel('preview')
-          setExportPending(true)
-        }}
+        onExport={startExport}
       />
 
       <input
