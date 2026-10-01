@@ -14,7 +14,7 @@
 }
 
 .editor-panel {
-  grid-template-rows: 55px minmax(0, 1fr) 48px;
+  grid-template-rows: 55px auto minmax(0, 1fr) 48px;
   border-right: 1px solid #cfd5dd;
 }
 
@@ -46,52 +46,6 @@
 
 .editor-heading,
 .preview-heading { position: relative; }
-
-.editor-help {
-  color: #8a93a1;
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0;
-  text-transform: none;
-}
-
-.editor-body {
-  display: grid;
-  grid-template-columns: 52px minmax(0, 1fr);
-  min-height: 0;
-  overflow: hidden;
-  background: #fcfcfd;
-}
-
-.line-numbers {
-  overflow: hidden;
-  padding: 22px 11px 48px 0;
-  color: #9aa2ae;
-  border-right: 1px solid #eef0f3;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 12px;
-  line-height: 24px;
-  text-align: right;
-  user-select: none;
-}
-
-.line-numbers span { display: block; height: 24px; }
-
-.editor-body textarea {
-  width: 100%;
-  height: 100%;
-  resize: none;
-  padding: 22px 26px 48px 16px;
-  color: #263246;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 12.5px;
-  line-height: 24px;
-  tab-size: 2;
-  white-space: pre;
-}
 
 .editor-footer {
   display: flex;

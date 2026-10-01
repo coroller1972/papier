@@ -114,13 +114,15 @@
   background-size: 100% 12px;
 }
 
-.page-scale {
-  width: calc(794px * var(--preview-scale));
-  min-height: calc(1123px * var(--preview-scale));
-  margin: 0 auto;
+.diagram-error-goto { border: 1px solid #f2b8b5; border-radius: 4px; background: #fff; padding: 4px 8px; color: #b42318; font: inherit; cursor: pointer; }
+@media print { .diagram-error-goto { display: none; } }
+
+.preview-panel.is-fullscreen {
+  position: fixed;
+  z-index: 50;
+  inset: 0;
+  grid-template-rows: 55px 72px auto minmax(0, 1fr);
 }
 
-.page-scale.format-letter {
-  width: calc(816px * var(--preview-scale));
-  min-height: calc(1056px * var(--preview-scale));
-}
+.preview-panel.is-fullscreen .preview-heading { padding-left: 36px; }
+.preview-panel.is-fullscreen .preview-scroller { padding-top: 42px; }

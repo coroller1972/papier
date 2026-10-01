@@ -37,7 +37,6 @@
   .settings-bar { overflow-x: auto; padding: 8px 12px; justify-content: flex-start; }
   .settings-group { min-width: 520px; }
   .preview-scroller { padding: 24px 16px 60px; }
-  .page-scale { margin-inline: auto; }
   .editor-heading, .preview-heading { padding-inline: 18px; }
   .editor-heading::after, .preview-heading::after { left: 18px; }
 }

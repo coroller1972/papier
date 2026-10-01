@@ -2,45 +2,8 @@
 /* Page size and margins are set per render by Paged.js (see lib/pagination.ts). */
 @page { margin: 0; }
 
-@media print {
-  html, body, #root { width: auto; height: auto; background: #fff; }
-  body { overflow: visible; }
-  .app-shell { display: block; height: auto; background: #fff; }
-  .app-header, .editor-panel, .preview-heading, .settings-bar, .mobile-tabs { display: none !important; }
-  .workspace, .preview-panel, .preview-scroller, .page-scale { display: block; width: auto; height: auto; min-height: 0; margin: 0; padding: 0; overflow: visible; background: #fff; }
-  .preview-panel { position: static !important; }
-  .document-page {
-    width: 210mm !important;
-    min-height: 297mm;
-    margin: 0 auto;
-    box-shadow: none;
-    transform: none;
-    print-color-adjust: exact;
-    -webkit-print-color-adjust: exact;
-  }
-  .format-letter .document-page { width: 216mm !important; min-height: 279mm; }
-  .document-page.margin-compact { padding: 14mm 15mm; }
-  .document-page.margin-normal { padding: 18mm 19mm; }
-  .document-page.margin-wide { padding: 23mm 25mm; }
-  .document-page h1, .document-page h2, .document-page h3 { break-after: avoid-page; }
-  .document-page pre, .document-page table, .mermaid-diagram, .document-page blockquote { break-inside: avoid-page; }
-}
-
 .export-error { position: fixed; z-index: 20; bottom: 24px; left: 16px; right: 16px; border: 1px solid #f2b8b5; border-radius: 6px; padding: 10px 20px; color: #b42318; background: #fff5f4; }
 .button:disabled { opacity: .65; cursor: wait; }
-@media print {
-  .export-error { display: none !important; }
-  .document-page, .format-letter .document-page {
-    width: auto !important;
-    min-height: 0;
-  }
-  .document-page.margin-compact, .document-page.margin-normal, .document-page.margin-wide {
-    padding: 0;
-  }
-  .document-page table { break-inside: auto; }
-  .document-page tr { break-inside: avoid; }
-  .document-page thead { display: table-header-group; }
-}
 
 .paginated-preview { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 .paginated-preview .preview-scroller { flex: 1; }
@@ -50,32 +13,34 @@
 .page-navigation button:disabled { opacity: .4; cursor: default; }
 .page-navigation [role=status] { color: #697386; font-size: 11px; }
 .page-break-button { font-size: 11px; }
-.editor-toolbar button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
 .pagination-error { margin: 0; padding: 10px 16px; background: #fff5f4; color: #b42318; font-size: 12px; }
 .paginated-scale { margin: 0 auto; overflow: clip; overflow-clip-margin: 24px; }
 .paginated-pages { width: fit-content; transform-origin: top left; }
 .paginated-pages .pagedjs_pages { display: flex; flex-direction: column; gap: 24px; }
 .paginated-pages .pagedjs_page { flex-shrink: 0; background: white; box-shadow: 0 4px 20px rgb(37 45 55 / 17%); }
+
+/* Everything that only applies when printing, in its original order. */
 @media print {
+  html, body, #root { width: auto; height: auto; background: #fff; }
+  body { overflow: visible; }
+  .app-shell { display: block; height: auto; background: #fff; }
+  .app-header, .editor-panel, .preview-heading, .settings-bar, .mobile-tabs { display: none !important; }
+  .workspace, .preview-panel, .preview-scroller { display: block; width: auto; height: auto; min-height: 0; margin: 0; padding: 0; overflow: visible; background: #fff; }
+  .preview-panel { position: static !important; }
+  .mermaid-diagram { break-inside: avoid-page; }
+  .export-error { display: none !important; }
   .page-navigation, .pagination-error, .pagination-staging { display: none !important; }
   .paginated-scale { width: auto !important; height: auto !important; overflow: visible; }
   .paginated-pages { transform: none !important; }
   .paginated-preview, .paginated-pages, .paginated-pages .pagedjs_pages { display: block; margin: 0; padding: 0; zoom: 1 !important; }
   .paginated-pages .pagedjs_page { margin: 0; box-shadow: none; break-after: page; }
   .paginated-pages .pagedjs_page:last-child { break-after: auto; }
-}
-
-@media print {
   .paper-content .manual-page-break { break-before: auto !important; }
   html, body { height: auto !important; min-height: 0 !important; max-height: none !important; }
   .paginated-pages .pagedjs_pages { height: auto !important; min-height: 0; max-height: none; }
   .paginated-pages .pagedjs_page, .paginated-pages .pagedjs_sheet {
     height: var(--pagedjs-height) !important; min-height: 0; max-height: none;
   }
-}
-@media print {
   body > :not(#root) { display: none !important; }
-}
-@media print {
   .workspace .preview-panel { display: block !important; }
 }
