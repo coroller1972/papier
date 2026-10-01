@@ -13,6 +13,8 @@ npm run dev
 
 Ouvrez ensuite l’adresse indiquée par Vite. Pour produire un PDF, utilisez **Exporter en PDF**, puis choisissez **Enregistrer au format PDF** dans la boîte d’impression du navigateur.
 
+Lancez la suite de tests de navigateur (Playwright, Chromium) avec `npm test` ; la CI exécute lint, build et tests à chaque push.
+
 ## Documents et images locales
 
 Utilisez **Ouvrir un dossier** pour conserver les relations entre les fichiers Markdown et leurs images :
