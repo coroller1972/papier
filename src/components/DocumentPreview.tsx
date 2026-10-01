@@ -4,12 +4,14 @@ import { resolveLocalImages } from '../lib/localWorkspace'
 import { paginate, pageMetrics } from '../lib/pagination'
 import '../paper.css'
 import { applyTypography, loadTypography } from '../lib/typography'
+import { createEchoGuard, publishScroll, subscribeScroll } from '../lib/scrollSync'
 import type { DocumentSettings, PreviewStatus } from '../types'
 
 interface DocumentPreviewProps {
   documentKey: string
   anchor?: { hash: string; sequence: number }
   onNavigateLink: (href: string) => boolean
+  onGoToLine: (line: number) => void
   exportRequest: number
   markdown: string
   settings: DocumentSettings
@@ -18,8 +20,15 @@ interface DocumentPreviewProps {
   onStatusChange: (status: PreviewStatus, request: number) => void
 }
 
+// Index of the last anchor whose line (field 0) or position (field 1) is at or before `value`.
+function lastAnchorIndex(anchors: Array<[number, number]>, field: 0 | 1, value: number) {
+  let found = -1
+  for (let index = 0; index < anchors.length && anchors[index][field] <= value; index++) found = index
+  return found
+}
+
 export const DocumentPreview = memo(function DocumentPreview({
-  documentKey, anchor, onNavigateLink, exportRequest, markdown, settings, documentPath, assetUrls, onStatusChange,
+  documentKey, anchor, onNavigateLink, onGoToLine, exportRequest, markdown, settings, documentPath, assetUrls, onStatusChange,
 }: DocumentPreviewProps) {
   const pagesRef = useRef<HTMLDivElement>(null)
   const scaleRef = useRef<HTMLDivElement>(null)
@@ -167,6 +176,49 @@ export const DocumentPreview = memo(function DocumentPreview({
     if (element && scroller) scroller.scrollTop += element.getBoundingClientRect().top - scroller.getBoundingClientRect().top - 20
   }, [anchor, busy, documentKey])
 
+  // Source-line anchors (block elements rendered with data-source-line), as [line, y in scroller content].
+  const lineAnchors = () => {
+    const scroller = scrollerRef.current
+    const pages = pagesRef.current
+    if (!scroller || !pages || pages.getAttribute('aria-busy') === 'true') return []
+    const origin = scroller.getBoundingClientRect().top - scroller.scrollTop
+    const anchors: Array<[number, number]> = [[1, pages.getBoundingClientRect().top - origin]]
+    for (const element of pages.querySelectorAll<HTMLElement>('[data-source-line]')) {
+      const line = Number(element.dataset.sourceLine)
+      if (line > anchors[anchors.length - 1][0]) anchors.push([line, element.getBoundingClientRect().top - origin])
+    }
+    anchors.push([markdown.split('\n').length + 1, pages.getBoundingClientRect().bottom - origin])
+    return anchors
+  }
+  const echoGuard = useRef(createEchoGuard())
+  const syncFrame = useRef(0)
+  const publishTopLine = () => {
+    const scroller = scrollerRef.current
+    if (!scroller || echoGuard.current.isEcho(scroller.scrollTop)) return
+    cancelAnimationFrame(syncFrame.current)
+    syncFrame.current = requestAnimationFrame(() => {
+      const anchors = lineAnchors()
+      const index = Math.max(0, lastAnchorIndex(anchors, 1, scroller.scrollTop))
+      if (index >= anchors.length - 1) return
+      const [line0, y0] = anchors[index]
+      const [line1, y1] = anchors[index + 1]
+      publishScroll('preview', line0 + (line1 - line0) * (y1 > y0 ? Math.max(0, (scroller.scrollTop - y0) / (y1 - y0)) : 0))
+    })
+  }
+  useEffect(() => subscribeScroll((origin, line) => {
+    const scroller = scrollerRef.current
+    if (origin !== 'editor' || !scroller) return
+    const anchors = lineAnchors()
+    const index = lastAnchorIndex(anchors, 0, line)
+    if (index < 0 || index === anchors.length - 1) return
+    const [line0, y0] = anchors[index]
+    const [line1, y1] = anchors[index + 1]
+    scroller.scrollTop = y0 + (y1 - y0) * (line - line0) / (line1 - line0)
+    echoGuard.current.expect(scroller.scrollTop)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [markdown])
+  useEffect(() => () => cancelAnimationFrame(syncFrame.current), [])
+
   const goTo = (page: number) => {
     const scroller = scrollerRef.current
     const element = pagesRef.current?.querySelectorAll<HTMLElement>('.pagedjs_page')[page - 1]
@@ -187,6 +239,7 @@ export const DocumentPreview = memo(function DocumentPreview({
       </nav>
       {error && <p className="pagination-error" role="alert">{error}</p>}
       <div className="preview-scroller" ref={scrollerRef} onScroll={() => {
+        publishTopLine()
         const scroller = scrollerRef.current
         if (!scroller) return
         const top = scroller.getBoundingClientRect().top
@@ -196,6 +249,8 @@ export const DocumentPreview = memo(function DocumentPreview({
       }}>
         <div ref={scaleRef} className="paginated-scale" style={{ width: pageWidth * scale, height: pagesSize.height * scale }}>
           <div ref={pagesRef} id="print-document" className="paginated-pages" onClick={event => {
+            const jump = (event.target as Element).closest<HTMLElement>('[data-goto-line]')
+            if (jump) { onGoToLine(Number(jump.dataset.gotoLine)); return }
             const link = (event.target as Element).closest('a[href]')
             if (link && onNavigateLink(link.getAttribute('href') || '')) event.preventDefault()
           }} aria-busy={busy} style={{ transform: `scale(${scale})` }} />

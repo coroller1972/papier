@@ -94,6 +94,8 @@ async (page) => {
   const longText = '# Long\n\n' + Array.from({length: 70}, (_, i) => `## Chapitre ${i}\n\n` + 'Texte de contrôle. '.repeat(30)).join('\n\n')
   await setText(longText + '\n\n```mermaid\nflowchart LR\nA --> B\n```')
   await ready()
+  // This section checks that edits keep the preview position; synced scrolling is covered by editing-check.js.
+  await page.getByRole('button', { name: 'Défilement lié' }).click()
   const stats = await page.evaluate(async () => (await import(performance.getEntriesByType('resource').map(entry => entry.name).filter(url => new URL(url).pathname === '/src/lib/markdown.ts' && new URL(url).searchParams.has('t')).at(-1) || '/src/lib/markdown.ts')).getMermaidCacheStats())
   await page.getByRole('combobox', { name: 'Page à afficher' }).selectOption('4')
   await editor.focus()

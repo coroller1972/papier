@@ -144,6 +144,12 @@ export default function App() {
     return () => window.cancelAnimationFrame(frame)
   }, [exportPending, previewStatus, renderedRequest, exportRequest, fileName])
 
+  const [goToLine, setGoToLine] = useState<{ line: number; sequence: number }>()
+  const handleGoToLine = useCallback((line: number) => {
+    setMobilePanel('editor')
+    setGoToLine(previous => ({ line, sequence: (previous?.sequence ?? 0) + 1 }))
+  }, [])
+
   const startExport = useCallback(() => {
     setExportError('')
     setExportRequest((request) => request + 1)
@@ -317,11 +323,12 @@ export default function App() {
       </nav>
 
       <main className={`workspace mobile-${mobilePanel}`}>
-        <EditorPanel documentKey={activeDocumentPath ?? fileName} saveStatus={saveStatus} markdown={markdown} onChange={handleMarkdownChange} />
+        <EditorPanel goToLine={goToLine} documentKey={activeDocumentPath ?? fileName} saveStatus={saveStatus} markdown={markdown} onChange={handleMarkdownChange} />
         <PreviewPanel
           documentKey={activeDocumentPath ?? fileName}
           anchor={anchor}
           onNavigateLink={handleNavigateLink}
+          onGoToLine={handleGoToLine}
           markdown={markdown}
           exportRequest={exportRequest}
           settings={settings}
