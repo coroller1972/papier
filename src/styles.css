@@ -581,7 +581,8 @@ textarea:focus-visible {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
 
-@page { size: auto; margin: 0; }
+/* Page size and margins are set per render by Paged.js (see lib/pagination.ts). */
+@page { margin: 0; }
 
 @media print {
   html, body, #root { width: auto; height: auto; background: #fff; }
