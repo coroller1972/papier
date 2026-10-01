@@ -53,7 +53,7 @@ export function AppHeader({
   return (
     <header className="app-header">
       <div className="brand-group">
-        <div className="wordmark">Papier</div>
+        <h1 className="wordmark">Papier</h1>
         {documents.length > 0 && <button ref={toggleRef} className="browser-toggle" type="button" aria-label="Parcourir les documents" title="Parcourir les documents" aria-expanded={browserOpen} aria-controls="document-browser-panel" onClick={() => setBrowserOpen(value => !value)}><FolderIcon /></button>}
         {documents.length > 0 && activeDocumentPath ? (
           <label className="document-picker">

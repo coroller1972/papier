@@ -24,7 +24,11 @@ button { color: inherit; }
 
 button:focus-visible,
 select:focus-visible,
-textarea:focus-visible {
+textarea:focus-visible,
+input:focus-visible,
+summary:focus-visible,
+a:focus-visible,
+.preview-scroller:focus-visible {
   outline: 2px solid #6ea2f5;
   outline-offset: 2px;
 }

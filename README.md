@@ -13,7 +13,13 @@ npm run dev
 
 Ouvrez ensuite l’adresse indiquée par Vite. Pour produire un PDF, utilisez **Exporter en PDF**, puis choisissez **Enregistrer au format PDF** dans la boîte d’impression du navigateur.
 
-Lancez la suite de tests de navigateur (Playwright, Chromium) avec `npm test` ; la CI exécute lint, build et tests à chaque push.
+Lancez la suite de tests de navigateur (Playwright, Chromium) avec `npm test` : elle construit l’application, vérifie l’export PDF, l’édition, l’accessibilité (axe-core) et le mode hors ligne. La CI exécute lint, build et tests à chaque push.
+
+## Installation et mode hors ligne
+
+Papier est une application web installable (PWA). Après une première visite sur la version construite (`npm run build`, puis `npm run preview` ou un hébergement statique en HTTPS), le navigateur propose de l’installer. L’application, les polices et les diagrammes Mermaid sont alors disponibles sans connexion. Les nouvelles versions sont téléchargées en arrière-plan et appliquées au rechargement suivant.
+
+Le service worker n’est actif que dans la version construite, pas avec `npm run dev`.
 
 ## Documents et images locales
 

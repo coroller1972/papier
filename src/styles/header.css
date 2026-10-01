@@ -22,6 +22,7 @@
 .brand-group { display: flex; align-items: center; gap: 12px; min-width: 0; }
 
 .wordmark {
+  margin: 0;
   color: #121b29;
   font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
   font-size: 31px;
@@ -32,7 +33,7 @@
 .current-file {
   max-width: 220px;
   overflow: hidden;
-  color: #7b8493;
+  color: #5f6b7d;
   font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;

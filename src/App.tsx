@@ -64,6 +64,9 @@ export default function App() {
       <input
         ref={fileInputRef}
         className="visually-hidden"
+        aria-label="Choisir un fichier Markdown"
+        tabIndex={-1}
+        aria-hidden="true"
         type="file"
         accept=".md,.markdown,text/markdown,text/plain"
         onChange={(event) => {
@@ -77,6 +80,9 @@ export default function App() {
         {...DIRECTORY_INPUT_PROPS}
         ref={folderInputRef}
         className="visually-hidden"
+        aria-label="Choisir un dossier"
+        tabIndex={-1}
+        aria-hidden="true"
         type="file"
         accept=".md,.markdown,text/markdown,image/*"
         multiple
@@ -90,8 +96,8 @@ export default function App() {
       {workspace.navigationError && <div className="navigation-error" role="alert">{workspace.navigationError}<button type="button" onClick={workspace.dismissNavigationError}>Fermer</button></div>}
       {pdf.exportError && <div className="export-error" role="alert">{pdf.exportError}</div>}
       <nav className="mobile-tabs" aria-label="Choix du panneau">
-        <button type="button" className={mobilePanel === 'editor' ? 'active' : ''} onClick={showEditor}>Markdown</button>
-        <button type="button" className={mobilePanel === 'preview' ? 'active' : ''} onClick={showPreview}>Aperçu</button>
+        <button type="button" className={mobilePanel === 'editor' ? 'active' : ''} aria-pressed={mobilePanel === 'editor'} onClick={showEditor}>Markdown</button>
+        <button type="button" className={mobilePanel === 'preview' ? 'active' : ''} aria-pressed={mobilePanel === 'preview'} onClick={showPreview}>Aperçu</button>
       </nav>
 
       <main className={`workspace mobile-${mobilePanel}`}>

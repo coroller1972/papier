@@ -186,7 +186,7 @@ export function EditorPanel({ markdown, onChange, saveStatus, documentKey, goToL
       <div className="code-editor" ref={hostRef} />
       <footer className="editor-footer">
         <span>{markdown.split('\n').length} lignes · {markdown.length.toLocaleString('fr-FR')} caractères</span>
-        <span className="autosave" role="status">{saveStatus}</span>
+        <span className="autosave" role={/^(Échec|Sauvegarde indisponible)/.test(saveStatus) ? 'alert' : undefined}>{saveStatus}</span>
       </footer>
     </section>
   )

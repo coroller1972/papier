@@ -238,7 +238,7 @@ export const DocumentPreview = memo(function DocumentPreview({
         <span role="status">{busy ? 'Pagination…' : `${pageCount} page${pageCount > 1 ? 's' : ''}`}</span>
       </nav>
       {error && <p className="pagination-error" role="alert">{error}</p>}
-      <div className="preview-scroller" ref={scrollerRef} onScroll={() => {
+      <div className="preview-scroller" ref={scrollerRef} role="region" aria-label="Pages du document" tabIndex={0} onScroll={() => {
         publishTopLine()
         const scroller = scrollerRef.current
         if (!scroller) return
