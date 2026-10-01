@@ -1,0 +1,46 @@
+/* @page, print layout and the paginated preview. */
+/* Page size and margins are set per render by Paged.js (see lib/pagination.ts). */
+@page { margin: 0; }
+
+.export-error { position: fixed; z-index: 20; bottom: 24px; left: 16px; right: 16px; border: 1px solid #f2b8b5; border-radius: 6px; padding: 10px 20px; color: #b42318; background: #fff5f4; }
+.button:disabled { opacity: .65; cursor: wait; }
+
+.paginated-preview { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.paginated-preview .preview-scroller { flex: 1; }
+.pagination-staging { position: fixed; left: 0; top: 0; visibility: hidden; pointer-events: none; z-index: -1; }
+.page-navigation { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px; padding: 9px 12px; border-bottom: 1px solid var(--border); background: #fff; font-size: 12px; }
+.page-navigation button, .page-navigation select, .page-break-button { border: 1px solid #dce1e7; border-radius: 4px; background: #fff; padding: 5px 9px; color: #334057; cursor: pointer; }
+.page-navigation button:disabled { opacity: .4; cursor: default; }
+.page-navigation [role=status] { color: #697386; font-size: 11px; }
+.page-break-button { font-size: 11px; }
+.pagination-error { margin: 0; padding: 10px 16px; background: #fff5f4; color: #b42318; font-size: 12px; }
+.paginated-scale { margin: 0 auto; overflow: clip; overflow-clip-margin: 24px; }
+.paginated-pages { width: fit-content; transform-origin: top left; }
+.paginated-pages .pagedjs_pages { display: flex; flex-direction: column; gap: 24px; }
+.paginated-pages .pagedjs_page { flex-shrink: 0; background: white; box-shadow: 0 4px 20px rgb(37 45 55 / 17%); }
+
+/* Everything that only applies when printing, in its original order. */
+@media print {
+  html, body, #root { width: auto; height: auto; background: #fff; }
+  body { overflow: visible; }
+  .app-shell { display: block; height: auto; background: #fff; }
+  .app-header, .editor-panel, .preview-heading, .settings-bar, .mobile-tabs { display: none !important; }
+  .workspace, .preview-panel, .preview-scroller { display: block; width: auto; height: auto; min-height: 0; margin: 0; padding: 0; overflow: visible; background: #fff; }
+  .preview-panel { position: static !important; }
+  .mermaid-diagram { break-inside: avoid-page; }
+  .export-error { display: none !important; }
+  .page-navigation, .pagination-error, .pagination-staging { display: none !important; }
+  .paginated-scale { width: auto !important; height: auto !important; overflow: visible; }
+  .paginated-pages { transform: none !important; }
+  .paginated-preview, .paginated-pages, .paginated-pages .pagedjs_pages { display: block; margin: 0; padding: 0; zoom: 1 !important; }
+  .paginated-pages .pagedjs_page { margin: 0; box-shadow: none; break-after: page; }
+  .paginated-pages .pagedjs_page:last-child { break-after: auto; }
+  .paper-content .manual-page-break { break-before: auto !important; }
+  html, body { height: auto !important; min-height: 0 !important; max-height: none !important; }
+  .paginated-pages .pagedjs_pages { height: auto !important; min-height: 0; max-height: none; }
+  .paginated-pages .pagedjs_page, .paginated-pages .pagedjs_sheet {
+    height: var(--pagedjs-height) !important; min-height: 0; max-height: none;
+  }
+  body > :not(#root) { display: none !important; }
+  .workspace .preview-panel { display: block !important; }
+}

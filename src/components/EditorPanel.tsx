@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { HighlightStyle, syntaxHighlighting } from '@codemirror/language'
 import { tags } from '@lezer/highlight'
 import { basicSetup } from 'codemirror'
@@ -8,12 +8,14 @@ import { EditorView, keymap } from '@codemirror/view'
 import { markdown as markdownLanguage } from '@codemirror/lang-markdown'
 import { openSearchPanel, search } from '@codemirror/search'
 import { isolateHistory } from '@codemirror/commands'
+import { createEchoGuard, isScrollSyncEnabled, publishScroll, setScrollSyncEnabled, subscribeScroll } from '../lib/scrollSync'
 
 interface EditorPanelProps {
   saveStatus: string
   markdown: string
   documentKey: string
   onChange: (value: string) => void
+  goToLine?: { line: number; sequence: number }
 }
 
 const editorHighlighting = syntaxHighlighting(HighlightStyle.define([
@@ -82,7 +84,8 @@ const phrases = {
   replace: 'Remplacer', 'replace all': 'Tout remplacer', close: 'Fermer la recherche',
 }
 
-export function EditorPanel({ markdown, onChange, saveStatus, documentKey }: EditorPanelProps) {
+export function EditorPanel({ markdown, onChange, saveStatus, documentKey, goToLine }: EditorPanelProps) {
+  const [syncScroll, setSyncScroll] = useState(isScrollSyncEnabled)
   const hostRef = useRef<HTMLDivElement>(null)
   const extensionsRef = useRef<Extension[]>([])
   const viewRef = useRef<EditorView | null>(null)
@@ -119,6 +122,38 @@ export function EditorPanel({ markdown, onChange, saveStatus, documentKey }: Edi
     return () => { view.destroy(); viewRef.current = null }
   }, [])
 
+  // Link the editor viewport to the preview in both directions.
+  useEffect(() => {
+    const view = viewRef.current
+    if (!view) return
+    const scroller = view.scrollDOM
+    const guard = createEchoGuard()
+    const onScroll = () => {
+      if (guard.isEcho(scroller.scrollTop)) return
+      const block = view.lineBlockAtHeight(scroller.scrollTop)
+      const fraction = block.height ? Math.min(1, Math.max(0, (scroller.scrollTop - block.top) / block.height)) : 0
+      publishScroll('editor', view.state.doc.lineAt(block.from).number + fraction)
+    }
+    scroller.addEventListener('scroll', onScroll, { passive: true })
+    const unsubscribe = subscribeScroll((origin, line) => {
+      if (origin !== 'preview') return
+      const number = Math.min(view.state.doc.lines, Math.max(1, Math.floor(line)))
+      const block = view.lineBlockAt(view.state.doc.line(number).from)
+      scroller.scrollTop = block.top + (line - number) * block.height
+      guard.expect(scroller.scrollTop)
+    })
+    return () => { scroller.removeEventListener('scroll', onScroll); unsubscribe() }
+  }, [])
+
+  useEffect(() => {
+    const view = viewRef.current
+    if (!view || !goToLine) return
+    const number = Math.min(view.state.doc.lines, Math.max(1, goToLine.line))
+    const line = view.state.doc.line(number)
+    view.dispatch({ selection: EditorSelection.range(line.from, line.to), effects: EditorView.scrollIntoView(line.from, { y: 'center' }) })
+    view.focus()
+  }, [goToLine])
+
   const previousKey = useRef(documentKey)
   useEffect(() => {
     const view = viewRef.current
@@ -146,11 +181,12 @@ export function EditorPanel({ markdown, onChange, saveStatus, documentKey }: Edi
         <button type="button" onClick={() => run(commands.quote)}>Citation</button>
         <button type="button" onClick={() => run(commands.code)}>Code</button>
         <button type="button" title="Rechercher / remplacer (⌘/Ctrl+F)" onClick={() => run(openSearchPanel)}>Rechercher / remplacer</button>
+        <button type="button" aria-pressed={syncScroll} title="Faire défiler l’aperçu avec l’éditeur" onClick={() => { setScrollSyncEnabled(!syncScroll); setSyncScroll(!syncScroll) }}>Défilement lié</button>
       </div>
       <div className="code-editor" ref={hostRef} />
       <footer className="editor-footer">
         <span>{markdown.split('\n').length} lignes · {markdown.length.toLocaleString('fr-FR')} caractères</span>
-        <span className="autosave" role="status">{saveStatus}</span>
+        <span className="autosave" role={/^(Échec|Sauvegarde indisponible)/.test(saveStatus) ? 'alert' : undefined}>{saveStatus}</span>
       </footer>
     </section>
   )

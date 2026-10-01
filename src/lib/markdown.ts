@@ -1,23 +1,33 @@
 import DOMPurify from 'dompurify'
 import { Marked, Renderer } from 'marked'
 
+// Top-level tokens carry their 1-based source line so the preview can be linked to the editor.
+type LineToken = { line?: number }
+const lineAttribute = (token: object) => {
+  const line = (token as LineToken).line
+  return line ? ` data-source-line="${line}"` : ''
+}
+
 const renderer = new Renderer()
+const defaults = new Renderer()
 const headingCounts = new Map<string, number>()
-renderer.heading = function ({ tokens, text, depth }) {
+renderer.heading = function (token) {
+  const { tokens, text, depth } = token
   const slug = text.replace(/<[^>]*>/g, '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-|-$/g, '') || 'section'
   const count = headingCounts.get(slug) || 0
   headingCounts.set(slug, count + 1)
   const id = count ? `${slug}-${count}` : slug
-  return `<h${depth} id="${id}">${this.parser.parseInline(tokens)}</h${depth}>`
+  return `<h${depth} id="${id}"${lineAttribute(token)}>${this.parser.parseInline(tokens)}</h${depth}>`
 }
 renderer.html = ({ text }) => text.trim() === '<!-- pagebreak -->'
   ? '<div class="manual-page-break"></div>'
   : text
 
-renderer.code = ({ text, lang }) => {
+renderer.code = token => {
+  const { text, lang } = token
   if (lang?.trim().toLowerCase() === 'mermaid') {
     const source = encodeURIComponent(text)
-    return `<div class="mermaid-diagram" data-mermaid-source="${source}"><div class="diagram-loading">Construction du diagramme…</div></div>`
+    return `<div class="mermaid-diagram"${lineAttribute(token)} data-mermaid-source="${source}"><div class="diagram-loading">Construction du diagramme…</div></div>`
   }
 
   const languageClass = lang ? ` class="language-${lang.replace(/[^a-z0-9_-]/gi, '')}"` : ''
@@ -26,7 +36,14 @@ renderer.code = ({ text, lang }) => {
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;')
 
-  return `<pre><code${languageClass}>${escaped}</code></pre>`
+  return `<pre${lineAttribute(token)}><code${languageClass}>${escaped}</code></pre>`
+}
+
+for (const name of ['paragraph', 'blockquote', 'list', 'table', 'hr'] as const) {
+  const base = defaults[name] as (this: Renderer, token: LineToken) => string
+  renderer[name] = function (this: Renderer, token: never) {
+    return base.call(this, token).replace(/^<(\w+)/, `<$1${lineAttribute(token)}`)
+  } as never
 }
 
 const parser = new Marked({
@@ -37,10 +54,16 @@ const parser = new Marked({
 
 export function renderMarkdown(markdown: string): string {
   headingCounts.clear()
-  const rawHtml = parser.parse(markdown, { async: false }) as string
+  const tokens = parser.lexer(markdown)
+  let line = 1
+  for (const token of tokens) {
+    ;(token as LineToken).line = line
+    line += token.raw.split('\n').length - 1
+  }
+  const rawHtml = parser.parser(tokens)
 
   return DOMPurify.sanitize(rawHtml, {
-    ADD_ATTR: ['data-mermaid-source'],
+    ADD_ATTR: ['data-mermaid-source', 'data-source-line'],
   })
 }
 
@@ -190,6 +213,17 @@ export async function renderMermaidDiagrams(
       const detail = document.createElement('span')
       detail.textContent = message
       diagram.append(title, detail)
+      const fenceLine = Number(diagram.dataset.sourceLine)
+      if (fenceLine) {
+        // Mermaid reports "line N" relative to the diagram; the fence opens on fenceLine.
+        const target = fenceLine + Number(/line (\d+)/i.exec(message)?.[1] ?? 0)
+        const jump = document.createElement('button')
+        jump.type = 'button'
+        jump.className = 'diagram-error-goto'
+        jump.dataset.gotoLine = String(target)
+        jump.textContent = `Aller à la ligne ${target}`
+        diagram.append(jump)
+      }
       diagram.removeAttribute('data-mermaid-source')
     }
   }

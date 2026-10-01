@@ -7,6 +7,7 @@ interface PreviewPanelProps {
   documentKey: string
   anchor?: { hash: string; sequence: number }
   onNavigateLink: (href: string) => boolean
+  onGoToLine: (line: number) => void
   exportRequest: number
   markdown: string
   settings: DocumentSettings
@@ -20,7 +21,7 @@ interface PreviewPanelProps {
 }
 
 export function PreviewPanel({
-  documentKey, anchor, onNavigateLink,
+  documentKey, anchor, onNavigateLink, onGoToLine,
   exportRequest,
   markdown,
   settings,
@@ -55,6 +56,7 @@ export function PreviewPanel({
         documentKey={documentKey}
         anchor={anchor}
         onNavigateLink={onNavigateLink}
+        onGoToLine={onGoToLine}
         exportRequest={exportRequest}
         markdown={markdown}
         settings={settings}
