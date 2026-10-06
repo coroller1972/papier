@@ -149,7 +149,7 @@ export async function renderMermaidDiagrams(
   engineInitialized = true
   }
 
-  let hasError = false
+  const failures: string[] = []
 
   for (const [index, diagram] of diagrams.entries()) {
     if (signal.aborted) return
@@ -200,23 +200,26 @@ export async function renderMermaidDiagrams(
       }
 
     } catch (error) {
-      hasError = true
       document.getElementById(`d${id}`)?.remove()
       if (signal.aborted || !diagram.isConnected) return
 
-      const message = error instanceof Error ? error.message.split('\n')[0] : 'Syntaxe invalide'
+      const message = error instanceof Error ? error.message.trim() : 'Syntaxe invalide'
       diagram.innerHTML = ''
       diagram.classList.add('diagram-error')
 
       const title = document.createElement('strong')
       title.textContent = 'Le diagramme Mermaid contient une erreur.'
+      // Keep Mermaid's full message: the lines after "Parse error on line N:" show the
+      // offending excerpt and what the parser expected.
       const detail = document.createElement('span')
       detail.textContent = message
       diagram.append(title, detail)
       const fenceLine = Number(diagram.dataset.sourceLine)
-      if (fenceLine) {
-        // Mermaid reports "line N" relative to the diagram; the fence opens on fenceLine.
-        const target = fenceLine + Number(/line (\d+)/i.exec(message)?.[1] ?? 0)
+      // Mermaid reports "line N" relative to the diagram; the fence opens on fenceLine.
+      const target = fenceLine ? fenceLine + Number(/line (\d+)/i.exec(message)?.[1] ?? 0) : 0
+      const summary = message.split('\n')[0].replace(/:$/, '')
+      failures.push(target ? `ligne ${target} (${summary})` : summary)
+      if (target) {
         const jump = document.createElement('button')
         jump.type = 'button'
         jump.className = 'diagram-error-goto'
@@ -228,7 +231,7 @@ export async function renderMermaidDiagrams(
     }
   }
 
-  if (hasError) {
-    throw new Error('Au moins un diagramme Mermaid contient une erreur.')
+  if (failures.length) {
+    throw new Error(failures.join(', '))
   }
 }
